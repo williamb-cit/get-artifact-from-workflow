@@ -1,78 +1,119 @@
 const { Octokit } = require("@octokit/rest");
 const AdmZip = require('adm-zip');
+const package = require("./package.json");
 
 async function run() {
-  // Setup and validation.
-  const package = require("./package.json");
-  const token = process.env.GITHUB_TOKEN;
-  const sha = process.env.GITHUB_SHA;
+  const sha = Args.sha();
+  const an = Args.artifactName(); 
+  
+  const action = new Action();
+  const wri = await action.getWorkflowRunId(sha);
+  const ai = await action.getArtifactId(wri, an);
+  await action.downloadDistribution(ai, sha);
+}
 
-  const context = {
-    owner: process.env.GITHUB_OWNER,
-    repo: process.env.GITHUB_REPO
-  };
+const Args = {
 
-  if (typeof token === "undefined" || token === "") {
+  sha: function() {
+    const sha = process.argv[2];
+
+    if (typeof sha === "undefined") {
+      console.error("[ERROR] SHA is missing!");
+      process.exit(1);
+    }
+
+    console.info(`[INFO] SHA: ${sha}`);
+    return sha;
+  },
+
+  artifactName: function() {
+    const name = process.argv[3];
+
+    if (typeof name === "undefined") {
+      console.error("[ERROR] Artifact name is missing!");
+      process.exit(1);
+    }
+
+    console.info(`[INFO] Artifact name: ${name}`);
+    return name;
+  }
+
+};
+
+const Action = function() {
+
+  if (typeof process.env.GITHUB_TOKEN === "undefined" || process.env.GITHUB_TOKEN === "") {
     console.error("[ERROR] GITHUB_TOKEN not set!");
     process.exit(1);
   }
 
-  if (typeof sha === "undefined" || sha === "") {
-    console.error("[ERROR] GITHUB_SHA not set!");
-    process.exit(1);
-  }
-
-  if (typeof context.owner === "undefined" || context.owner === ""
-        || typeof context.repo === "undefined" || context.repo === "") {
+  if (typeof process.env.GITHUB_OWNER === "undefined" || process.env.GITHUB_OWNER === ""
+        || typeof process.env.GITHUB_REPO === "undefined" || process.env.GITHUB_REPO === "") {
     console.error("[ERROR] Invalid context! Check owner and repo.");
     process.exit(1);
   }
 
-  // Octokit setup.
   const octokit = new Octokit({
-    auth: token,
+    auth: process.env.GITHUB_TOKEN,
     baseUrl: "https://api.github.com",
     log: console,
     timeZone: "America/Sao_Paulo",
     userAgent: `${package.name}@${package.version}`
   });
 
-  // Find the workflow that matches GITHUB_SHA.
-  const { data: workflows } = await octokit.actions.listWorkflowRuns({
-    ...context,
-    status: "success",
-    workflow_id: process.env.GITHUB_WORKFLOW_ID
-  });
+  const context = {
+    owner: process.env.GITHUB_OWNER,
+    repo: process.env.GITHUB_REPO
+  };
 
-  const workflow = workflows.workflow_runs.find(element => sha === element.head_sha);
-  console.log(`[INFO] Workflow run ID: ${workflow.id}`);
+  return {
 
-  // Get the first artifact.
-  const { data: artifacts } = await octokit.actions.listWorkflowRunArtifacts({
-    ...context,
-    run_id: workflow.id
-  });
+    getWorkflowRunId: async function(sha) {
+      const { data: workflows } = await octokit.actions.listWorkflowRuns({
+        ...context,
+        status: "success",
+        workflow_id: process.env.GITHUB_WORKFLOW_ID
+      });
 
-  const artifact = artifacts.artifacts[0];
-  console.log(`[INFO] Artifact: ${artifact.id} (${artifact.name})`);
+      const workflowRun = workflows.workflow_runs.find(element => sha === element.head_sha);
+      console.info(`[INFO] Workflow run ID: ${workflowRun.id}`);
 
-  // Download the artifact.
-  const { data: arrayBuffer } = await octokit.actions.downloadArtifact({
-    ...context,
-    artifact_id: artifact.id,
-    archive_format: "zip"
-  });
+      return workflowRun.id;
+    },
 
-  const zipFile = new AdmZip(Buffer.from(arrayBuffer));
-  const entry = zipFile.getEntries().find(entry => new RegExp(`${sha}\.*`).test(entry.name));
+    getArtifactId: async function(workflowRunId, artifactName) {
+      const { data: artifacts } = await octokit.actions.listWorkflowRunArtifacts({
+        ...context,
+        run_id: workflowRunId
+      });
 
-  if (typeof entry === "undefined") {
-    console.error(`[ERROR] Could not find distribution file: ${sha}.*`);
-    process.exit(1);
-  }
+      const artifact = artifacts.artifacts.find(element => artifactName === element.name);
+      console.info(`[INFO] Artifact: ${artifact.id}`);
 
-  zipFile.extractEntryTo(entry, __dirname, false, true);
-  console.info(`[INFO] File downloaded: ${entry.name}`);
+      return artifact.id;
+    },
+
+    downloadDistribution: async function(artifactId, sha) {
+      const { data: arrayBuffer } = await octokit.actions.downloadArtifact({
+        ...context,
+        artifact_id: artifactId,
+        archive_format: "zip"
+      });
+
+      const zipFile = new AdmZip(Buffer.from(arrayBuffer));
+      const entry = zipFile.getEntries().find(element => new RegExp(`${sha}\.*`).test(element.name));
+
+      if (typeof entry === "undefined") {
+        console.error(`[ERROR] Could not find distribution file: ${sha}.*`);
+        process.exit(1);
+      }
+
+      zipFile.extractEntryTo(entry, __dirname, false, true);
+      console.info(`[INFO] File downloaded: ${entry.name}`);
+    }
+
+  };
+
 }
 
 run();
