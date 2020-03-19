@@ -1,48 +1,48 @@
-const { Octokit } = require('@octokit/rest');
-const fs = require('fs');
-const path = require('path');
+const { Octokit } = require("@octokit/rest");
+const fs = require("fs");
+const path = require("path");
 
 async function run() {
   // Setup and validation.
-  const package = require('./package.json');
+  const package = require("./package.json");
   const token = process.env.GITHUB_TOKEN;
   const sha = process.env.GITHUB_SHA;
 
   const context = {
     owner: process.env.GITHUB_OWNER,
-    repo: process.env.GITHUB_REPO,
-    workflow_id: process.env.GITHUB_WORKFLOW_ID
+    repo: process.env.GITHUB_REPO
   };
   
-  if (typeof token === 'undefined' || token === '') {
-    console.error('GITHUB_TOKEN not set!');
+  if (typeof token === "undefined" || token === "") {
+    console.error("GITHUB_TOKEN not set!");
     process.exit(1);
   }
 
-  if (typeof sha === 'undefined' || sha === '') {
-    console.error('GITHUB_SHA not set!');
+  if (typeof sha === "undefined" || sha === "") {
+    console.error("GITHUB_SHA not set!");
     process.exit(1);
   }
 
-  if (typeof context.owner === 'undefined' || context.owner === ''
-        || typeof context.repo === 'undefined' || context.repo === '') {
-    console.error('Invalid context! Check owner and repo.');
+  if (typeof context.owner === "undefined" || context.owner === ""
+        || typeof context.repo === "undefined" || context.repo === "") {
+    console.error("Invalid context! Check owner and repo.");
     process.exit(1);
   }
 
   // Octokit setup.
   const octokit = new Octokit({
     auth: token,
-    baseUrl: 'https://api.github.com',
+    baseUrl: "https://api.github.com",
     log: console,
-    timeZone: 'America/Sao_Paulo',
+    timeZone: "America/Sao_Paulo",
     userAgent: `${package.name}@${package.version}`
   });
 
   // Find the workflow that matches GITHUB_SHA.
   const { data: workflows } = await octokit.actions.listWorkflowRuns({
     ...context,
-    status: 'success'
+    status: "success",
+    workflow_id: process.env.GITHUB_WORKFLOW_ID
   });
 
   const workflow = workflows.workflow_runs.find(element => sha === element.head_sha);
@@ -61,9 +61,9 @@ async function run() {
   const { data: artifactBytes } = await octokit.actions.downloadArtifact({
     ...context,
     artifact_id: artifact.id,
-    archive_format: 'zip'
+    archive_format: "zip"
   });
-  
+
   const fileName = `${sha}.zip`;
   const filePath = path.join(__dirname, fileName);
 
