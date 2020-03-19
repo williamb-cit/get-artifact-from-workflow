@@ -12,12 +12,24 @@ async function run() {
   await action.downloadDistribution(ai, sha);
 }
 
+const Validation = {
+
+  isUndefined: function(obj) {
+    return typeof obj === "undefined";
+  },
+
+  isStringEmpty: function(str) {
+    return typeof str === "undefined" || str.trim() === "";
+  }
+
+};
+
 const Args = {
 
   sha: function() {
     const sha = process.argv[2];
 
-    if (typeof sha === "undefined") {
+    if (Validation.isUndefined(sha)) {
       console.error("[ERROR] SHA is missing!");
       process.exit(1);
     }
@@ -29,7 +41,7 @@ const Args = {
   artifactName: function() {
     const name = process.argv[3];
 
-    if (typeof name === "undefined") {
+    if (Validation.isUndefined(name)) {
       console.error("[ERROR] Artifact name is missing!");
       process.exit(1);
     }
@@ -42,13 +54,12 @@ const Args = {
 
 const Action = function() {
 
-  if (typeof process.env.GITHUB_TOKEN === "undefined" || process.env.GITHUB_TOKEN === "") {
+  if (Validation.isStringEmpty(process.env.GITHUB_TOKEN)) {
     console.error("[ERROR] GITHUB_TOKEN not set!");
     process.exit(1);
   }
 
-  if (typeof process.env.GITHUB_OWNER === "undefined" || process.env.GITHUB_OWNER === ""
-        || typeof process.env.GITHUB_REPO === "undefined" || process.env.GITHUB_REPO === "") {
+  if (Validation.isStringEmpty(process.env.GITHUB_OWNER) || Validation.isStringEmpty(process.env.GITHUB_REPO)) {
     console.error("[ERROR] Invalid context! Check owner and repo.");
     process.exit(1);
   }
@@ -76,8 +87,13 @@ const Action = function() {
       });
 
       const workflowRun = workflows.workflow_runs.find(element => sha === element.head_sha);
-      console.info(`[INFO] Workflow run ID: ${workflowRun.id}`);
 
+      if (Validation.isUndefined(workflowRun)) {
+        console.error(`[ERROR] Workflow run for '${sha}' not found!`);
+        process.exit(1);
+      }
+
+      console.info(`[INFO] Workflow run ID: ${workflowRun.id}`);
       return workflowRun.id;
     },
 
@@ -88,8 +104,13 @@ const Action = function() {
       });
 
       const artifact = artifacts.artifacts.find(element => artifactName === element.name);
-      console.info(`[INFO] Artifact: ${artifact.id}`);
 
+      if (Validation.isUndefined(artifact)) {
+        console.error(`[ERROR] Artifact '${artifactName}' not found!`);
+        process.exit(1);
+      }
+
+      console.info(`[INFO] Artifact: ${artifact.id}`);
       return artifact.id;
     },
 
@@ -103,7 +124,7 @@ const Action = function() {
       const zipFile = new AdmZip(Buffer.from(arrayBuffer));
       const entry = zipFile.getEntries().find(element => new RegExp(`${sha}\.*`).test(element.name));
 
-      if (typeof entry === "undefined") {
+      if (Validation.isUndefined(entry)) {
         console.error(`[ERROR] Could not find distribution file: ${sha}.*`);
         process.exit(1);
       }
