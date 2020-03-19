@@ -1,6 +1,5 @@
 const { Octokit } = require("@octokit/rest");
-const fs = require("fs");
-const path = require("path");
+const AdmZip = require('adm-zip');
 
 async function run() {
   // Setup and validation.
@@ -12,20 +11,20 @@ async function run() {
     owner: process.env.GITHUB_OWNER,
     repo: process.env.GITHUB_REPO
   };
-  
+
   if (typeof token === "undefined" || token === "") {
-    console.error("GITHUB_TOKEN not set!");
+    console.error("[ERROR] GITHUB_TOKEN not set!");
     process.exit(1);
   }
 
   if (typeof sha === "undefined" || sha === "") {
-    console.error("GITHUB_SHA not set!");
+    console.error("[ERROR] GITHUB_SHA not set!");
     process.exit(1);
   }
 
   if (typeof context.owner === "undefined" || context.owner === ""
         || typeof context.repo === "undefined" || context.repo === "") {
-    console.error("Invalid context! Check owner and repo.");
+    console.error("[ERROR] Invalid context! Check owner and repo.");
     process.exit(1);
   }
 
@@ -46,7 +45,7 @@ async function run() {
   });
 
   const workflow = workflows.workflow_runs.find(element => sha === element.head_sha);
-  console.log(`> Workflow run ID: ${workflow.id}`);
+  console.log(`[INFO] Workflow run ID: ${workflow.id}`);
 
   // Get the first artifact.
   const { data: artifacts } = await octokit.actions.listWorkflowRunArtifacts({
@@ -55,24 +54,25 @@ async function run() {
   });
 
   const artifact = artifacts.artifacts[0];
-  console.log(`> Artifact: ${artifact.id} (${artifact.name})`);
+  console.log(`[INFO] Artifact: ${artifact.id} (${artifact.name})`);
 
   // Download the artifact.
-  const { data: artifactBytes } = await octokit.actions.downloadArtifact({
+  const { data: arrayBuffer } = await octokit.actions.downloadArtifact({
     ...context,
     artifact_id: artifact.id,
     archive_format: "zip"
   });
 
-  const fileName = `${sha}.zip`;
-  const filePath = path.join(__dirname, fileName);
+  const zipFile = new AdmZip(Buffer.from(arrayBuffer));
+  const entry = zipFile.getEntries().find(entry => new RegExp(`${sha}\.*`).test(entry.name));
 
-  fs.unlink(filePath, () => {
-    fs.writeFile(filePath, Buffer.from(artifactBytes), (err) => {
-      if (err) throw err;
-      console.log(`> File '${fileName}' created`);
-    });
-  });
+  if (typeof entry === "undefined") {
+    console.error(`[ERROR] Could not find distribution file: ${sha}.*`);
+    process.exit(1);
+  }
+
+  zipFile.extractEntryTo(entry, __dirname, false, true);
+  console.info(`[INFO] File downloaded: ${entry.name}`);
 }
 
 run();
