@@ -1,6 +1,6 @@
 {
   "name": "get-artifact-from-workflow",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match.",
   "main": "index.js",
   "dependencies": {
@@ -17,6 +17,10 @@
     "local": "node -r dotenv/config index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "williamb",
-  "license": "ISC"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/williamb-cit/get-artifact-from-workflow"
+  },
+  "author": "williamb@ciandt.com",
+  "license": "MIT"
 }
