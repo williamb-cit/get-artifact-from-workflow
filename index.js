@@ -27,67 +27,52 @@ const Validation = {
 
 const Args = {
 
-  workflowId: function() {
-    const workflowId = process.argv[2];
+  get: function(name) {
+    const value = process.env[`INPUT_${name.toUpperCase()}`] || '';
 
-    if (Validation.isUndefined(workflowId)) {
-      console.error("[ERROR] Workflow ID is missing!");
+    if (Validation.isStringEmpty(value)) {
+      console.error(`[ERROR] ${name} is missing!`);
       process.exit(1);
     }
 
+    return value;
+  },
+
+  workflowId: function() {
+    const workflowId = Args.get("workflow-id");
     console.info(`[INFO] Workflow ID: ${workflowId}`);
     return workflowId;
   },
 
   sha: function() {
-    const sha = process.argv[3];
-
-    if (Validation.isUndefined(sha)) {
-      console.error("[ERROR] SHA is missing!");
-      process.exit(1);
-    }
-
+    const sha = Args.get("sha");
     console.info(`[INFO] SHA: ${sha}`);
     return sha;
   },
 
   artifactName: function() {
-    const name = process.argv[4];
-
-    if (Validation.isUndefined(name)) {
-      console.error("[ERROR] Artifact name is missing!");
-      process.exit(1);
-    }
-
-    console.info(`[INFO] Artifact name: ${name}`);
-    return name;
+    const artifactName = Args.get("artifact-name");
+    console.info(`[INFO] Artifact name: ${artifactName}`);
+    return artifactName;
   }
 
 };
 
 const Action = function() {
 
-  if (Validation.isStringEmpty(process.env.GITHUB_TOKEN)) {
-    console.error("[ERROR] GITHUB_TOKEN not set!");
-    process.exit(1);
-  }
-
-  if (Validation.isStringEmpty(process.env.GITHUB_OWNER) || Validation.isStringEmpty(process.env.GITHUB_REPO)) {
-    console.error("[ERROR] Invalid context! Check owner and repo.");
-    process.exit(1);
-  }
-
   const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
+    auth: Args.get("token"),
     baseUrl: "https://api.github.com",
     log: console,
     timeZone: "America/Sao_Paulo",
     userAgent: `${package.name}@${package.version}`
   });
 
+  const [ repositoryOwner, repositoryName ] = Args.get("repository").split("/");
+
   const context = {
-    owner: process.env.GITHUB_OWNER,
-    repo: process.env.GITHUB_REPO
+    owner: repositoryOwner,
+    repo: repositoryName
   };
 
   return {
