@@ -30,3 +30,38 @@ with:
   token: ${{ secrets.GITHUB_TOKEN }}
   workflow-id: another-workflow.yml
 ```
+
+## Desenvolvimento
+
+### Testando a action
+
+Esta *action* pode ser executada localmente, mas é necessário configurar as variáveis de ambiente para simular o uso dentro de um workflow do GitHub Actions.
+
+Primeiro, crie um arquivo `.env` e adicione o seguinte conteúdo:
+
+```
+GITHUB_REPOSITORY=<OWNER>/<REPO_NAME>
+GITHUB_SHA=<COMMIT_ID>
+INPUT_ARTIFACT-NAME=<NAME>
+INPUT_TOKEN=<GITHUB_TOKEN>
+INPUT_WORKFLOW-ID=<WORKFLOW_FILE_NAME>
+OCTOKIT_LOG_REQUESTS=true
+```
+
+Após preencher as variáveis com o valor correto, execute:
+
+```
+npm run local
+```
+
+**ATENÇÃO: Nunca versione o arquivo `.env`!**
+
+### Publicando atualizações
+
+Para gerar o arquivo de distribuição desta *action*, execute o seguinte comando:
+
+```
+npm run build
+```
+
+O arquivo `dist/index.js` será atualizado e pode ser versionado.

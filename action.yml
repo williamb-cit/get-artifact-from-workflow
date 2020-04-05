@@ -16,4 +16,4 @@ outputs:
     description: "Name of the distro file extracted from the artifact."
 runs:
   using: "node12"
-  main: "index.js"
+  main: "dist/index.js"
