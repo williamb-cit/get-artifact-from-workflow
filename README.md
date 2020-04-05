@@ -14,6 +14,7 @@ Para deixar claro os workflows envolvidos no processo:
 ## Entradas
 
 - **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: "distro"
+- **(Opcional)** `target-path`: Diretório onde serão armazenados os arquivos contidos no artefato. Padrão: `GITHUB_WORKSPACE`
 - **(Obrigatório)** `token`: `${{ secrets.GITHUB_TOKEN }}`
 - **(Obrigatório)** `workflow-id`: Nome do arquivo que define o *outro workflow*
 
@@ -27,6 +28,7 @@ Para deixar claro os workflows envolvidos no processo:
 uses: williamb-cit/get-artifact-from-workflow@v1
 with:
   artifact-name: newrelease
+  target-path: ${{ github.workspace }}
   token: ${{ secrets.GITHUB_TOKEN }}
   workflow-id: another-workflow.yml
 ```
@@ -42,7 +44,9 @@ Primeiro, crie um arquivo `.env` e adicione o seguinte conteúdo:
 ```
 GITHUB_REPOSITORY=<OWNER>/<REPO_NAME>
 GITHUB_SHA=<COMMIT_ID>
+GITHUB_WORKSPACE=<PATH_TO_SIMULATE_GITHUB_WORKSPACE>
 INPUT_ARTIFACT-NAME=<NAME>
+INPUT_TARGET-PATH=<PATH>
 INPUT_TOKEN=<GITHUB_TOKEN>
 INPUT_WORKFLOW-ID=<WORKFLOW_FILE_NAME>
 OCTOKIT_LOG_REQUESTS=true

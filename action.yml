@@ -5,6 +5,9 @@ inputs:
     description: "Name of the artifact that was uploaded by the other workflow."
     required: true
     default: "distro"
+  target-path:
+    description: "Directory where the files stored in the artifact will be expanded. Defaults to GITHUB_WORKSPACE."
+    required: false
   token:
     description: "secrets.GITHUB_TOKEN"
     required: true
