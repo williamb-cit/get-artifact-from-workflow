@@ -4,13 +4,15 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "@octokit/rest": "^17.1.0",
+    "@actions/core": "^1.2.3",
+    "@octokit/rest": "^17.1.4",
     "adm-zip": "^0.4.14"
   },
   "devDependencies": {
     "dotenv": "^8.2.0"
   },
   "scripts": {
+    "local": "node -r dotenv/config index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

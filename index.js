@@ -1,26 +1,24 @@
+const core = require('@actions/core');
 const { Octokit } = require("@octokit/rest");
+
 const AdmZip = require('adm-zip');
 const package = require("./package.json");
 
 async function run() {
+  const t = Args.token();
   const wi = Args.workflowId();
-  const sha = Args.sha();
   const an = Args.artifactName();
   
-  const action = new Action();
-  const wri = await action.getWorkflowRunId(wi, sha);
+  const action = new Action(t);
+  const wri = await action.getWorkflowRunId(wi);
   const ai = await action.getArtifactId(wri, an);
-  await action.downloadDistribution(ai, sha);
+  await action.downloadDistribution(ai);
 }
 
 const Validation = {
 
   isUndefined: function(obj) {
     return typeof obj === "undefined";
-  },
-
-  isStringEmpty: function(str) {
-    return typeof str === "undefined" || str.trim() === "";
   }
 
 };
@@ -28,66 +26,62 @@ const Validation = {
 const Args = {
 
   get: function(name) {
-    const value = process.env[`INPUT_${name.toUpperCase()}`] || '';
-
-    if (Validation.isStringEmpty(value)) {
-      console.error(`[ERROR] ${name} is missing!`);
-      process.exit(1);
-    }
-
-    return value;
-  },
-
-  workflowId: function() {
-    const workflowId = Args.get("workflow-id");
-    console.info(`[INFO] Workflow ID: ${workflowId}`);
-    return workflowId;
-  },
-
-  sha: function() {
-    const sha = Args.get("sha");
-    console.info(`[INFO] SHA: ${sha}`);
-    return sha;
+    return core.getInput(name, { required: true });
   },
 
   artifactName: function() {
     const artifactName = Args.get("artifact-name");
     console.info(`[INFO] Artifact name: ${artifactName}`);
     return artifactName;
+  },
+
+  token: function() {
+    return Args.get("token");
+  },
+
+  workflowId: function() {
+    const workflowId = Args.get("workflow-id");
+    console.info(`[INFO] Workflow ID: ${workflowId}`);
+    return workflowId;
   }
 
 };
 
-const Action = function() {
+const Action = function(token) {
 
   const octokit = new Octokit({
-    auth: Args.get("token"),
+    auth: token,
     baseUrl: "https://api.github.com",
     log: console,
     timeZone: "America/Sao_Paulo",
     userAgent: `${package.name}@${package.version}`
   });
 
-  const [ repositoryOwner, repositoryName ] = Args.get("repository").split("/");
+  const [ repositoryOwner, repositoryName ] = process.env.GITHUB_REPOSITORY.split("/");
 
   const context = {
-    owner: repositoryOwner,
-    repo: repositoryName
+    repo: {
+      owner: repositoryOwner,
+      repo: repositoryName
+    },
+    sha: process.env.GITHUB_SHA
   };
+
+  console.info(`[INFO] SHA: ${context.sha}`);
 
   return {
 
-    getWorkflowRunId: async function(workflowId, sha) {
+    getWorkflowRunId: async function(workflowId) {
       const { data: workflows } = await octokit.actions.listWorkflowRuns({
-        ...context,
+        ...context.repo,
         status: "success",
         workflow_id: workflowId
       });
 
-      const workflowRun = workflows.workflow_runs.find(element => sha === element.head_sha);
+      const workflowRun = workflows.workflow_runs.find(element => context.sha === element.head_sha);
 
       if (Validation.isUndefined(workflowRun)) {
-        console.error(`[ERROR] Workflow run for '${sha}' not found!`);
+        console.error(`[ERROR] Workflow run for '${context.sha}' not found!`);
         process.exit(1);
       }
 
@@ -97,7 +91,7 @@ const Action = function() {
 
     getArtifactId: async function(workflowRunId, artifactName) {
       const { data: artifacts } = await octokit.actions.listWorkflowRunArtifacts({
-        ...context,
+        ...context.repo,
         run_id: workflowRunId
       });
 
@@ -112,18 +106,18 @@ const Action = function() {
       return artifact.id;
     },
 
-    downloadDistribution: async function(artifactId, sha) {
+    downloadDistribution: async function(artifactId) {
       const { data: arrayBuffer } = await octokit.actions.downloadArtifact({
-        ...context,
+        ...context.repo,
         artifact_id: artifactId,
         archive_format: "zip"
       });
 
       const zipFile = new AdmZip(Buffer.from(arrayBuffer));
-      const entry = zipFile.getEntries().find(element => new RegExp(`${sha}\.*`).test(element.name));
+      const entry = zipFile.getEntries().find(element => new RegExp(`${context.sha}\.*`).test(element.name));
 
       if (Validation.isUndefined(entry)) {
-        console.error(`[ERROR] Could not find distribution file: ${sha}.*`);
+        console.error(`[ERROR] Could not find distribution file: ${context.sha}.*`);
         process.exit(1);
       }
 
