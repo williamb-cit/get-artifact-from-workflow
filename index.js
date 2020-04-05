@@ -3,11 +3,12 @@ const AdmZip = require('adm-zip');
 const package = require("./package.json");
 
 async function run() {
+  const wi = Args.workflowId();
   const sha = Args.sha();
-  const an = Args.artifactName(); 
+  const an = Args.artifactName();
   
   const action = new Action();
-  const wri = await action.getWorkflowRunId(sha);
+  const wri = await action.getWorkflowRunId(wi, sha);
   const ai = await action.getArtifactId(wri, an);
   await action.downloadDistribution(ai, sha);
 }
@@ -26,8 +27,20 @@ const Validation = {
 
 const Args = {
 
+  workflowId: function() {
+    const workflowId = process.argv[2];
+
+    if (Validation.isUndefined(workflowId)) {
+      console.error("[ERROR] Workflow ID is missing!");
+      process.exit(1);
+    }
+
+    console.info(`[INFO] Workflow ID: ${workflowId}`);
+    return workflowId;
+  },
+
   sha: function() {
-    const sha = process.argv[2];
+    const sha = process.argv[3];
 
     if (Validation.isUndefined(sha)) {
       console.error("[ERROR] SHA is missing!");
@@ -39,7 +52,7 @@ const Args = {
   },
 
   artifactName: function() {
-    const name = process.argv[3];
+    const name = process.argv[4];
 
     if (Validation.isUndefined(name)) {
       console.error("[ERROR] Artifact name is missing!");
@@ -79,11 +92,11 @@ const Action = function() {
 
   return {
 
-    getWorkflowRunId: async function(sha) {
+    getWorkflowRunId: async function(workflowId, sha) {
       const { data: workflows } = await octokit.actions.listWorkflowRuns({
         ...context,
         status: "success",
-        workflow_id: process.env.GITHUB_WORKFLOW_ID
+        workflow_id: workflowId
       });
 
       const workflowRun = workflows.workflow_runs.find(element => sha === element.head_sha);
