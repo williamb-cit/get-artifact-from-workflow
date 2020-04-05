@@ -52,7 +52,7 @@ const Action = function(token) {
   const octokit = new Octokit({
     auth: token,
     baseUrl: "https://api.github.com",
-    log: console,
+    log: process.env.OCTOKIT_LOG_REQUESTS === "true" ? console : null,
     timeZone: "America/Sao_Paulo",
     userAgent: `${package.name}@${package.version}`
   });
@@ -122,6 +122,7 @@ const Action = function(token) {
       }
 
       zipFile.extractEntryTo(entry, __dirname, false, true);
+      core.setOutput("distro-file-name", entry.name);
       console.info(`[INFO] File downloaded: ${entry.name}`);
     }
 
