@@ -2,25 +2,27 @@
 
 ## Sobre
 
-Obtém um artefato da execução de outro workflow e extrai o **arquivo de distribuição**. O arquivo de distribuição deve ser um tarball (`.tar.gz`) com o nome igual ao ID do commit (`GITHUB_SHA`) que disparou o outro workflow.
+Obtém um artefato da execução de outro workflow e extrai seu conteúdo num diretório de distribuição do workflow usando a *action*. Os workflows envolvidos no processo são:
 
-A relação entre o workflow que usa esta *action* e o outro workflow é estabelecida por meio do ID do commit que disparou o outro workflow, logo ele também deve disparar workflow usando a *action*.
-
-Para deixar claro os workflows envolvidos no processo:
-
-- **Outro workflow:** responsável pela criação do pacote e registro do artefato
+- **Outro workflow:** responsável pela criação e upload do artefato
 - **Workflow usando a *action*:** responsável por obter o artefato e utilizar o arquivo de distribuição contido nele
+
+A relação entre os workflows é estabelecida por meio do ID do commit (`GITHUB_SHA`). Sendo assim, **o commit que disparou o outro workflow também deve ser responsável por disparar o workflow usando a *action***.
 
 ## Entradas
 
-- **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: `distro-${{ github.sha }}`
-- **(Opcional)** `target-path`: Diretório onde serão armazenados os arquivos contidos no artefato. Padrão: `${{ github.workspace }}`
-- **(Obrigatório)** `token`: `${{ secrets.GITHUB_TOKEN }}`
-- **(Obrigatório)** `workflow-id`: Nome do arquivo que define o *outro workflow*
+|Nome|Obrigatório|Descrição|Padrão|
+|-|-|-|-|
+|`artifact_name`|N|Nome do artefato que foi registrado (upload) no outro workflow|`distro-${{ github.sha }}`|
+|`target_path`|N|Diretório onde serão armazenados os arquivos contidos no artefato|`${{ github.workspace }}`|
+|`token`|S|Use `${{ secrets.GITHUB_TOKEN }}`|-|
+|`workflow_id`|S|Nome do arquivo que define o *outro workflow*|-|
 
 ## Saídas
 
-- `distro-content-path`: Diretório onde foram extraídos os arquivos contidos no artefato (`distro-${{ github.sha }}`)
+|Nome|Descrição|
+|-|-|
+|`distro_content_path`|Diretório onde foram extraídos os arquivos contidos no artefato (`distro-${{ github.sha }}`)|
 
 ## Exemplos
 
@@ -30,7 +32,7 @@ Para deixar claro os workflows envolvidos no processo:
 uses: williamb-cit/get-artifact-from-workflow@v1
 with:
   token: ${{ secrets.GITHUB_TOKEN }}
-  workflow-id: another-workflow-file.yml
+  workflow_id: another-workflow-file.yml
 ```
 
 ### Completo
@@ -38,28 +40,28 @@ with:
 ```yaml
 uses: williamb-cit/get-artifact-from-workflow@v1
 with:
-  artifact-name: newrelease
-  target-path: ./custom-target-path
+  artifact_name: newrelease
+  target_path: ./custom-target-path
   token: ${{ secrets.GITHUB_TOKEN }}
-  workflow-id: another-workflow-file.yml
+  workflow_id: another-workflow-file.yml
 ```
 
 ## Desenvolvimento
 
-### Testando a action
+### Testando a *action*
 
 Esta *action* pode ser executada localmente, mas é necessário configurar as variáveis de ambiente para simular o uso dentro de um workflow do GitHub Actions.
 
-Primeiro, crie um arquivo `.env` e adicione o seguinte conteúdo:
+Primeiro, crie o arquivo `.env` e adicione o seguinte conteúdo:
 
 ```
 GITHUB_REPOSITORY=<OWNER>/<REPO_NAME>
 GITHUB_SHA=<COMMIT_ID>
 GITHUB_WORKSPACE=<PATH_TO_SIMULATE_GITHUB_WORKSPACE>
-INPUT_ARTIFACT-NAME=<NAME>
-INPUT_TARGET-PATH=<PATH>
+INPUT_ARTIFACT_NAME=<NAME>
+INPUT_TARGET_PATH=<PATH>
 INPUT_TOKEN=<GITHUB_TOKEN>
-INPUT_WORKFLOW-ID=<WORKFLOW_FILE_NAME>
+INPUT_WORKFLOW_ID=<WORKFLOW_FILE_NAME>
 OCTOKIT_LOG_REQUESTS=true
 ```
 

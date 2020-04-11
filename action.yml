@@ -1,20 +1,20 @@
 name: "Get Artifact from Workflow"
 description: "Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match."
 inputs:
-  artifact-name:
+  artifact_name:
     description: "Name of the artifact that was uploaded by the other workflow. Defaults to 'distro-${{ GITHUB_SHA }}'."
     required: false
-  target-path:
+  target_path:
     description: "Directory where the files stored in the artifact will be expanded. Defaults to GITHUB_WORKSPACE."
     required: false
   token:
     description: "secrets.GITHUB_TOKEN"
     required: true
-  workflow-id:
+  workflow_id:
     description: "Name of the workflow file that uploaded the artifact. Must contain the extension (.yml)."
     required: true
 outputs:
-  distro-content-path:
+  distro_content_path:
     description: "Path where the files contained in the artifact were extracted."
 runs:
   using: "node12"

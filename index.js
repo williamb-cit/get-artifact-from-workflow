@@ -1,18 +1,18 @@
-const fs = require("fs");
 const path = require("path");
 
-const core = require('@actions/core');
+const core = require("@actions/core");
+const io = require("@actions/io");
 const { Octokit } = require("@octokit/rest");
 
-const AdmZip = require('adm-zip');
-const package = require("./package.json");
+const AdmZip = require("adm-zip");
+const pkg = require("./package.json");
 
 async function run() {
   const an = Args.artifactName();
   const t = Args.token();
   const tp = Args.targetPath();
   const wi = Args.workflowId();
-  
+
   const action = new Action(t);
   const wri = await action.getWorkflowRunId(wi);
   const ai = await action.getArtifactId(wri, an);
@@ -34,7 +34,7 @@ const Validation = {
 const Env = {
 
   githubContext: function() {
-    const [ repositoryOwner, repositoryName ] = process.env.GITHUB_REPOSITORY.split("/");
+    const [repositoryOwner, repositoryName] = process.env.GITHUB_REPOSITORY.split("/");
 
     return {
       repo: {
@@ -62,7 +62,7 @@ const Args = {
   },
 
   artifactName: function() {
-    let artifactName = Args.get("artifact-name", { required: false });
+    let artifactName = Args.get("artifact_name", { required: false });
 
     if (Validation.isStringEmpty(artifactName)) {
       artifactName = `distro-${Env.githubContext().sha}`;
@@ -73,7 +73,7 @@ const Args = {
   },
 
   targetPath: function() {
-    let targetPath = Args.get("target-path", { required: false });
+    let targetPath = Args.get("target_path", { required: false });
 
     if (Validation.isStringEmpty(targetPath)) {
       targetPath = Env.githubWorkspace();
@@ -88,7 +88,7 @@ const Args = {
   },
 
   workflowId: function() {
-    const workflowId = Args.get("workflow-id", { required: true });
+    const workflowId = Args.get("workflow_id", { required: true });
     console.info(`[INFO] Workflow ID: ${workflowId}`);
     return workflowId;
   }
@@ -96,13 +96,12 @@ const Args = {
 };
 
 const Action = function(token) {
-
   const octokit = new Octokit({
     auth: token,
     baseUrl: "https://api.github.com",
     log: Env.octokitLogRequests() ? console : null,
     timeZone: "America/Sao_Paulo",
-    userAgent: `${package.name}@${package.version}`
+    userAgent: `${pkg.name}@${pkg.version}`
   });
 
   const context = Env.githubContext();
@@ -155,18 +154,14 @@ const Action = function(token) {
       const zipFile = new AdmZip(Buffer.from(arrayBuffer));
       const distroContentPath = path.join(targetPath, `distro-${context.sha}`);
 
-      fs.mkdir(distroContentPath, (err) => {
-        // If directory already exists, the content will be merged.
-        if (err && err.code !== "EEXIST") throw err;
+      await io.rmRF(distroContentPath);
+      await io.mkdirP(distroContentPath);
 
-        zipFile.extractAllTo(distroContentPath, true);
-        core.setOutput("distro-content-path", distroContentPath);
-        console.info(`[INFO] Files extracted to: ${distroContentPath}`);
-      });
+      zipFile.extractAllTo(distroContentPath, true);
+      core.setOutput("distro_content_path", distroContentPath);
+      console.info(`[INFO] Files extracted to: ${distroContentPath}`);
     }
-
   };
-
-}
+};
 
 run();
