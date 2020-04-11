@@ -79,4 +79,10 @@ Para gerar o arquivo de distribuição desta *action*, execute o seguinte comand
 npm run build
 ```
 
-O arquivo `dist/index.js` será atualizado e pode ser versionado.
+O arquivo `dist/index.js` será atualizado e pode ser versionado. A execução do script compilado pode ser testado usando o seguinte comando:
+
+```
+npm run dist
+```
+
+Visto que `dist/index.js` é o arquivo executado pela *action* durante a execução do workflow, é importante testá-lo antes de publicar uma atualização, garantindo assim que ele contém os novos comportamentos e lógicas implementadas.
