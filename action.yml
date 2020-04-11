@@ -14,8 +14,8 @@ inputs:
     description: "Name of the workflow file that uploaded the artifact. Must contain the extension (.yml)."
     required: true
 outputs:
-  distro-file-name:
-    description: "Name of the distro file extracted from the artifact."
+  distro-content-path:
+    description: "Path where the files contained in the artifact were extracted."
 runs:
   using: "node12"
   main: "dist/index.js"

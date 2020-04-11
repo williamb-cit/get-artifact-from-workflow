@@ -13,14 +13,14 @@ Para deixar claro os workflows envolvidos no processo:
 
 ## Entradas
 
-- **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: "distro-${{ GITHUB_SHA }}"
-- **(Opcional)** `target-path`: Diretório onde serão armazenados os arquivos contidos no artefato. Padrão: `GITHUB_WORKSPACE`
+- **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: `distro-${{ github.sha }}`
+- **(Opcional)** `target-path`: Diretório onde serão armazenados os arquivos contidos no artefato. Padrão: `${{ github.workspace }}`
 - **(Obrigatório)** `token`: `${{ secrets.GITHUB_TOKEN }}`
 - **(Obrigatório)** `workflow-id`: Nome do arquivo que define o *outro workflow*
 
 ## Saídas
 
-- `distro-file-name`: Nome do arquivo de distribuição (idêntico a usar `${{ github.sha }}.tar.gz`)
+- `distro-content-path`: Diretório onde foram extraídos os arquivos contidos no artefato (`distro-${{ github.sha }}`)
 
 ## Exemplos
 
