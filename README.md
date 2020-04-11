@@ -13,7 +13,7 @@ Para deixar claro os workflows envolvidos no processo:
 
 ## Entradas
 
-- **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: "distro"
+- **(Opcional)** `artifact-name`: Nome do artefato que foi registrado (upload) no outro workflow. Padrão: "distro-${{ GITHUB_SHA }}"
 - **(Opcional)** `target-path`: Diretório onde serão armazenados os arquivos contidos no artefato. Padrão: `GITHUB_WORKSPACE`
 - **(Obrigatório)** `token`: `${{ secrets.GITHUB_TOKEN }}`
 - **(Obrigatório)** `workflow-id`: Nome do arquivo que define o *outro workflow*
@@ -22,15 +22,26 @@ Para deixar claro os workflows envolvidos no processo:
 
 - `distro-file-name`: Nome do arquivo de distribuição (idêntico a usar `${{ github.sha }}.tar.gz`)
 
-## Exemplo
+## Exemplos
+
+### Simples
+
+```yaml
+uses: williamb-cit/get-artifact-from-workflow@v1
+with:
+  token: ${{ secrets.GITHUB_TOKEN }}
+  workflow-id: another-workflow-file.yml
+```
+
+### Completo
 
 ```yaml
 uses: williamb-cit/get-artifact-from-workflow@v1
 with:
   artifact-name: newrelease
-  target-path: ${{ github.workspace }}
+  target-path: ./custom-target-path
   token: ${{ secrets.GITHUB_TOKEN }}
-  workflow-id: another-workflow.yml
+  workflow-id: another-workflow-file.yml
 ```
 
 ## Desenvolvimento

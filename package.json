@@ -1,6 +1,6 @@
 {
   "name": "get-artifact-from-workflow",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match.",
   "main": "index.js",
   "dependencies": {

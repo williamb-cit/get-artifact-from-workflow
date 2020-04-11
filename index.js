@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const core = require('@actions/core');
 const { Octokit } = require("@octokit/rest");
 
@@ -20,41 +23,10 @@ const Validation = {
 
   isUndefined: function(obj) {
     return typeof obj === "undefined";
-  }
-
-};
-
-const Args = {
-
-  get: function(name, options) {
-    return core.getInput(name, options || { required: true });
   },
 
-  artifactName: function() {
-    const artifactName = Args.get("artifact-name");
-    console.info(`[INFO] Artifact name: ${artifactName}`);
-    return artifactName;
-  },
-
-  targetPath: function() {
-    let targetPath = Args.get("target-path", { required: false });
-
-    if (Validation.isUndefined(targetPath) || targetPath === "") {
-      targetPath = Env.githubWorkspace();
-    }
-
-    console.info(`[INFO] Target path: ${targetPath}`);
-    return targetPath;
-  },
-
-  token: function() {
-    return Args.get("token");
-  },
-
-  workflowId: function() {
-    const workflowId = Args.get("workflow-id");
-    console.info(`[INFO] Workflow ID: ${workflowId}`);
-    return workflowId;
+  isStringEmpty: function(str) {
+    return typeof str === "undefined" || str.trim() === "";
   }
 
 };
@@ -79,6 +51,46 @@ const Env = {
 
   octokitLogRequests: function() {
     return !Validation.isUndefined(process.env.OCTOKIT_LOG_REQUESTS) && process.env.OCTOKIT_LOG_REQUESTS.toLowerCase() === "true";
+  }
+
+};
+
+const Args = {
+
+  get: function(name, options) {
+    return core.getInput(name, options);
+  },
+
+  artifactName: function() {
+    let artifactName = Args.get("artifact-name", { required: false });
+
+    if (Validation.isStringEmpty(artifactName)) {
+      artifactName = `distro-${Env.githubContext().sha}`;
+    }
+
+    console.info(`[INFO] Artifact name: ${artifactName}`);
+    return artifactName;
+  },
+
+  targetPath: function() {
+    let targetPath = Args.get("target-path", { required: false });
+
+    if (Validation.isStringEmpty(targetPath)) {
+      targetPath = Env.githubWorkspace();
+    }
+
+    console.info(`[INFO] Target path: ${targetPath}`);
+    return targetPath;
+  },
+
+  token: function() {
+    return Args.get("token", { required: true });
+  },
+
+  workflowId: function() {
+    const workflowId = Args.get("workflow-id", { required: true });
+    console.info(`[INFO] Workflow ID: ${workflowId}`);
+    return workflowId;
   }
 
 };
@@ -141,16 +153,16 @@ const Action = function(token) {
       });
 
       const zipFile = new AdmZip(Buffer.from(arrayBuffer));
-      const entry = zipFile.getEntries().find(element => new RegExp(`${context.sha}\.*`).test(element.name));
+      const distroContentPath = path.join(targetPath, `distro-${context.sha}`);
 
-      if (Validation.isUndefined(entry)) {
-        console.error(`[ERROR] Could not find distribution file: ${context.sha}.*`);
-        process.exit(1);
-      }
+      fs.mkdir(distroContentPath, (err) => {
+        // If directory already exists, the content will be merged.
+        if (err && err.code !== "EEXIST") throw err;
 
-      zipFile.extractEntryTo(entry, targetPath, false, true);
-      core.setOutput("distro-file-name", entry.name);
-      console.info(`[INFO] File downloaded: ${entry.name}`);
+        zipFile.extractAllTo(distroContentPath, true);
+        core.setOutput("distro-content-path", distroContentPath);
+        console.info(`[INFO] Files extracted to: ${distroContentPath}`);
+      });
     }
 
   };

@@ -2,9 +2,8 @@ name: "Get Artifact from Workflow"
 description: "Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match."
 inputs:
   artifact-name:
-    description: "Name of the artifact that was uploaded by the other workflow."
-    required: true
-    default: "distro"
+    description: "Name of the artifact that was uploaded by the other workflow. Defaults to 'distro-${{ GITHUB_SHA }}'."
+    required: false
   target-path:
     description: "Directory where the files stored in the artifact will be expanded. Defaults to GITHUB_WORKSPACE."
     required: false

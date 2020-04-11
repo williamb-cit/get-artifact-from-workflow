@@ -1,5 +1,6 @@
-.env
+.env*
 *.tar.gz
 *.zip
 
+distro-*/
 node_modules/

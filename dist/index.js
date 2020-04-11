@@ -376,6 +376,9 @@ module.exports = require("os");
 /***/ 104:
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
+const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
+
 const core = __webpack_require__(470);
 const { Octokit } = __webpack_require__(889);
 
@@ -398,41 +401,10 @@ const Validation = {
 
   isUndefined: function(obj) {
     return typeof obj === "undefined";
-  }
-
-};
-
-const Args = {
-
-  get: function(name, options) {
-    return core.getInput(name, options || { required: true });
   },
 
-  artifactName: function() {
-    const artifactName = Args.get("artifact-name");
-    console.info(`[INFO] Artifact name: ${artifactName}`);
-    return artifactName;
-  },
-
-  targetPath: function() {
-    let targetPath = Args.get("target-path", { required: false });
-
-    if (Validation.isUndefined(targetPath) || targetPath === "") {
-      targetPath = Env.githubWorkspace();
-    }
-
-    console.info(`[INFO] Target path: ${targetPath}`);
-    return targetPath;
-  },
-
-  token: function() {
-    return Args.get("token");
-  },
-
-  workflowId: function() {
-    const workflowId = Args.get("workflow-id");
-    console.info(`[INFO] Workflow ID: ${workflowId}`);
-    return workflowId;
+  isStringEmpty: function(str) {
+    return typeof str === "undefined" || str.trim() === "";
   }
 
 };
@@ -457,6 +429,46 @@ const Env = {
 
   octokitLogRequests: function() {
     return !Validation.isUndefined(process.env.OCTOKIT_LOG_REQUESTS) && process.env.OCTOKIT_LOG_REQUESTS.toLowerCase() === "true";
+  }
+
+};
+
+const Args = {
+
+  get: function(name, options) {
+    return core.getInput(name, options);
+  },
+
+  artifactName: function() {
+    let artifactName = Args.get("artifact-name", { required: false });
+
+    if (Validation.isStringEmpty(artifactName)) {
+      artifactName = `distro-${Env.githubContext().sha}`;
+    }
+
+    console.info(`[INFO] Artifact name: ${artifactName}`);
+    return artifactName;
+  },
+
+  targetPath: function() {
+    let targetPath = Args.get("target-path", { required: false });
+
+    if (Validation.isStringEmpty(targetPath)) {
+      targetPath = Env.githubWorkspace();
+    }
+
+    console.info(`[INFO] Target path: ${targetPath}`);
+    return targetPath;
+  },
+
+  token: function() {
+    return Args.get("token", { required: true });
+  },
+
+  workflowId: function() {
+    const workflowId = Args.get("workflow-id", { required: true });
+    console.info(`[INFO] Workflow ID: ${workflowId}`);
+    return workflowId;
   }
 
 };
@@ -519,16 +531,16 @@ const Action = function(token) {
       });
 
       const zipFile = new AdmZip(Buffer.from(arrayBuffer));
-      const entry = zipFile.getEntries().find(element => new RegExp(`${context.sha}\.*`).test(element.name));
+      const distroContentPath = path.join(targetPath, `distro-${context.sha}`);
 
-      if (Validation.isUndefined(entry)) {
-        console.error(`[ERROR] Could not find distribution file: ${context.sha}.*`);
-        process.exit(1);
-      }
+      fs.mkdir(distroContentPath, (err) => {
+        // If directory already exists, the content will be merged.
+        if (err && err.code !== "EEXIST") throw err;
 
-      zipFile.extractEntryTo(entry, targetPath, false, true);
-      core.setOutput("distro-file-name", entry.name);
-      console.info(`[INFO] File downloaded: ${entry.name}`);
+        zipFile.extractAllTo(distroContentPath, true);
+        core.setOutput("distro-content-path", distroContentPath);
+        console.info(`[INFO] Files extracted to: ${distroContentPath}`);
+      });
     }
 
   };
@@ -8109,7 +8121,7 @@ module.exports = eval("require")("original-fs");
 /***/ 731:
 /***/ (function(module) {
 
-module.exports = {"name":"get-artifact-from-workflow","version":"1.0.1","description":"Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match.","main":"index.js","dependencies":{"@actions/core":"^1.2.3","@octokit/rest":"^17.1.4","adm-zip":"^0.4.14"},"devDependencies":{"@zeit/ncc":"^0.22.0","dotenv":"^8.2.0"},"scripts":{"build":"ncc build index.js -o dist","local":"node -r dotenv/config index.js","test":"echo \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"https://github.com/williamb-cit/get-artifact-from-workflow"},"author":"williamb@ciandt.com","license":"MIT"};
+module.exports = {"name":"get-artifact-from-workflow","version":"1.0.1","description":"Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match.","main":"index.js","dependencies":{"@actions/core":"^1.2.3","@octokit/rest":"^17.1.4","adm-zip":"^0.4.14"},"devDependencies":{"@zeit/ncc":"^0.22.0","dotenv":"^8.2.0"},"scripts":{"build":"ncc build index.js -o dist","dist":"node -r dotenv/config dist/index.js","local":"node -r dotenv/config index.js","test":"echo \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"https://github.com/williamb-cit/get-artifact-from-workflow"},"author":"williamb@ciandt.com","license":"MIT"};
 
 /***/ }),
 
