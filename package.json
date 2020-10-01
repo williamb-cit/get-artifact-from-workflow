@@ -4,7 +4,7 @@
   "description": "Get an artifact from a different workflow run and extract the distro file. GITHUB_SHA must match.",
   "main": "index.js",
   "dependencies": {
-    "@actions/core": "^1.2.3",
+    "@actions/core": "^1.2.6",
     "@actions/io": "^1.0.2",
     "@octokit/rest": "^17.1.4",
     "adm-zip": "^0.4.14"
